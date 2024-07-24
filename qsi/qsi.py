@@ -1,6 +1,8 @@
 import argparse
 import socket
 import json
+import threading
+import struct
 
 class QSI:
     """
@@ -8,32 +10,37 @@ class QSI:
     """
 
     def __init__(self):
-        self.coordinator_port = None
-        self.module_port = None
-        self.server = None
-        self.message_handlers = {}
-
-    def run(self):
         parser = argparse.ArgumentParser(description="Port Handler")
         parser.add_argument('module_port', type=int, help="Module port number")
-        parser.add_argument('coordinator_port', help="Coordinator port number")
+        parser.add_argument('coordinator_port',type=int, help="Coordinator port number")
         args = parser.parse_args()
 
         self.coordinator_port = args.coordinator_port
         self.module_port = args.module_port
+        self.coordinator_port = args.coordinator_port
+        self.module_port = args.module_port
+        self.server = None
+        self.message_handlers = {}
 
+    def run(self):
+        """
+        Starts the server for communication with the Coordinator
+        """
         self.start_server(self.module_port)
 
     def start_server(self, port):
         self.server = threading.Thread(target=self.handle_connections, args=(port,))
-        self.server.daemon = True
         self.server.start()
 
     def handle_connections(self, port):
+        """
+        Handles connections
+        """
+        print("Starting server")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(('localhost', port))
             s.listen()
-            print("Listening on port {port}")
+            print(f"Listening on port {port}")
             while True:
                 conn, addr = s.accept()
                 with conn:
@@ -55,8 +62,9 @@ class QSI:
                             msg_type = message_json.get("msg_type")
                             if msg_type in self.message_handlers:
                                 print(f"Received message on port {port}: {msg_type}")
-                                response_json = self.message_handlers[msg_type](message_json)
-                                self.send_to_coordinator(response_json)
+                                message_dict = json.dumps(message_json)
+                                response_dict = self.message_handlers[msg_type](message_dict)
+                                self.send_to_coordinator(response_dict)
                         except json.JSONDecodeError as e:
                             print(f"Failed to decode JSON: {e}")
                         
@@ -69,16 +77,17 @@ class QSI:
             if not packet:
                 return None
             data.extend(packet)
-        return data:
+        return data
 
     def send_to_coordinator(self, response_dict):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(('localhost', self.coordinator_port))
-            json_data = json.dumps(response_dict)
-            s.sendall(response_json)
-            print(f"Sent the data to the coordinator: {response_dict[msg_type]}")
+            response_json = json.dumps(response_dict)
+            message = struct.pack('!I', len(response_json)) + response_json.encode('utf-8')
+            s.sendall(message)
+            print(f"Sent the data to the coordinator: {response_dict['msg_type']}")
 
-    def on_message(self, message):
+    def on_message(self, msg_type):
         def decorator(func):
             self.message_handlers[msg_type] = func
             return func
