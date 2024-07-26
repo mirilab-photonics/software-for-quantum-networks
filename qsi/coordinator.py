@@ -4,10 +4,12 @@ Coordinator
 import argparse
 import json
 import socket
-import subprocess
 import struct
 import threading
 import time
+
+from qsi.socket_handler import SocketHandler
+from qsi.module_reference import ModuleReference
 
 
 def find_empty_port():
@@ -24,107 +26,94 @@ def is_port_open(port, host='localhost', timeout=1.0):
         except (ConnectionRefusedError, socket.timeout):
             return False
     
-class ModuleReference:
-    def __init__(self, module, port, coordinator_port, runtime):
-        self.module = module
-        self.port = port
-        self.runtime = runtime
-        if runtime == "python":
-            command = ["python", module, str(port), str(coordinator_port)]
-        print(command)
-        self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
-        # Start threads to capture stdout and stderr
-        threading.Thread(target=self._capture_output, args=(self.process.stdout, "stdout")).start()
-        threading.Thread(target=self._capture_output, args=(self.process.stderr, "stderr")).start()
-
-    def _capture_output(self, stream, stream_name):
-        for line in iter(stream.readline, ''):
-            print(f"[{stream_name}] {line.strip()}")
-        stream.close()
-
-class Coordinator:
+class Coordinator(SocketHandler):
     def __init__(self):
         parser = argparse.ArgumentParser(description="Coordinator arg parser")
         parser.add_argument("coordinator_port", type=int, help="Coordinator port")
         args = parser.parse_args()
-
+        super().__init__(listening_port=args.coordinator_port)
         self.modules = []
         self.coordinator_port = args.coordinator_port
-        self.coordinator_send_port = find_empty_port()
-
-    def start_server(self):
-        self.server = threading.Thread(target=self.handle_connections, args=(self.coordinator_port,))
-        self.server.start()
-
-    def handle_connections(self, port):
-        """
-        Handles connections
-        """
-        print("Starting server")
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('localhost', port))
-            s.listen()
-            print(f"Listening on port {port}")
-            while True:
-                conn, addr = s.accept()
-                with conn:
-                    print(f"Connected by {addr}")
-                    while True:
-                        #First receive the message length
-                        length_data = self.recvall(conn, 4)
-                        if not length_data:
-                            break
-                        message_length = struct.unpack('!I', length_data)[0]
-
-                        data = self.recvall(conn, message_length)
-                        if not data:
-                            break
-                        message = data.decode()
-                        print(message)
-                        
-
-    def recvall(self, conn, n):
-        """ Helper function to receive exactly n bytes from the socket"""
-        data = bytearray()
-        while len(data)<n:
-            packet = conn.recv(n-len(data))
-            if not packet:
-                return None
-            data.extend(packet)
-        return data
+        self.condition = threading.Condition()
+        self.response_received = True
 
     def run(self):
-        self.start_server()
-        for (module, port) in self.modules:
-            msg = {"msg_type": "state_init"}
-            json_data = json.dumps(msg)
-            self.retry_connection(port, json_data)
+        self.start_server(self.coordinator_port)
+        for (module, port, mr) in self.modules:
+            msg = {"msg_type": "param_query"}
+            self.retry_connection(port, msg)
+
+    def register_componnet(self, module, port=None, runtime="python"):
+        if port is None:
+            port = find_empty_port()
+        mr = ModuleReference(module, port, self.coordinator_port, runtime, self)
+        self.modules.append((module, port, mr))
+        return mr
+
+    def router(self, message):
+        print(message)
+        mr = self.get_module_reference(message["sent_from"])[2]
+        print(mr)
+        match message["msg_type"]:
+            case "param_query_response":
+                if message["params"]:
+                    mr.notify_params(message["params"])
+
+        with self.condition:
+            self.response_received = True
+            self.condition.notify()
+
+    def send_to(self, port, message):
+        with self.condition:
+            while not self.response_received:
+                self.condition.wait()
+            self.response_received = False
+            super().send_to(port, message)
 
     def retry_connection(self, port, json_data, retries=5, delay=2):
         for attempt in range(retries):
             try:
-                self.send_from_coordinator_port(port, json_data)
+                print("Sending to")
+                self.send_to(port, json_data)
                 print(f"Successfully connected and sent data to port {port}")
                 return
             except ConnectionRefusedError:
                 print(f"Connection refused on port {port}, retrying...")
                 time.sleep(delay)
+                self.response_received = True
         print(f"Failed to connect to port {port} after {retries} attempts")
 
-    def send_from_coordinator_port(self, port, json_data):
-        source_port = self.coordinator_send_port
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('localhost', source_port))
-            s.connect(('localhost', port))
-            message = struct.pack('!I', len(json_data)) + json_data.encode('utf-8')
-            s.sendall(message)
-            print(f"Sent data from port {source_port} to port {port}")
 
-    def register_componnet(self, module, port=None, runtime="python"):
-        if port is None:
-            port = find_empty_port()
-        mr = ModuleReference(module, port, self.coordinator_port, runtime)
-        self.modules.append((module, port))
-        return module
-    
+    def get_module_reference(self, sent_from):
+        return [x for x in self.modules if x[1] == sent_from][0]
+
+    def state_init(self):
+        for (module, port, mr) in self.modules:
+            msg = {"msg_type": "state_init"}
+            self.retry_connection(port, msg)
+
+    def send_and_return_response(self, port, message):
+        with self.condition:
+            self.send_to(port, message)
+            while not self.response_received:
+                self.condition.wait()
+            return self.response_message
+
+    def terminate(self):
+        """
+        Terminates all modules and joins the processes
+        """
+        for (module, port, mr) in self.modules:
+            message = {"msg_type": "terminate"}
+            self.send_and_return_response(port, message)
+            mr.terminate()
+
+        self.should_terminate = True
+        if self.server_socket:
+            self.server_socket.close()  # This will unblock the accept call
+        if self.server:
+            self.server.join()
+
+
+class FalseInternalStateNumber(Exception):
+    pass
