@@ -2,6 +2,7 @@ import subprocess
 import threading
 
 from qsi.helpers import numpy_to_json, json_to_numpy
+from qsi.state import State, StateProp
 
 class ModuleReference:
     def __init__(self, module: str, port: int, coordinator_port: int, runtime: str, coordinator: "Coordinator"):
@@ -61,6 +62,18 @@ class ModuleReference:
         }
         self.coordinator.send_to(self.port, message)
 
+    def state_init(self):
+        message = {
+            "msg_type" : "state_init"
+        }
+        response = self.coordinator.send_and_return_response(self.port, message)
+        print("\n\n")
+        print(response)
+        states = []
+        for s in response["states"]:
+            states.append(State.from_message(s))
+        return states
+        
     def channel_query(self, state: "State", port_assign):
         """
         Queries the module for the Kraus channel
@@ -87,3 +100,4 @@ class ModuleReference:
         except Exception as e:
             print(f"Exception while terinating subprocess: {e}")
                     
+

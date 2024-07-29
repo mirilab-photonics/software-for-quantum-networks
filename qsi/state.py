@@ -45,14 +45,16 @@ class State:
         self.state = np.kron(self.state, other.state)
         self.state_props.extend(other.state_props)
         self.dimensions *= other.dimensions
+        other = None
 
-    def to_message(self, port_assign, msg_type="channel_query"):
+    def to_message(self, port_assign=None, msg_type="channel_query"):
         message = {
             "dimensions": self.dimensions,
             "state": numpy_to_json(self.state),
-            "ports": port_assign,
             "state_props": [x.dict() for x in self.state_props]
         }
+        if port_assign is not None:
+            message["ports"]=port_assign
         return message
         
     @classmethod
@@ -79,3 +81,6 @@ class State:
             else:
                 new_state += op @ self.state @ op.conjugate().T
         self.state = new_state
+
+    def get_props(self, uuid) -> StateProp:
+        return [x for x in self.state_props if x.uuid == uuid][0]

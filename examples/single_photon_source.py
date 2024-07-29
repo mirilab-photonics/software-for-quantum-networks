@@ -29,7 +29,6 @@ def param_query(msg):
     """
     return {
         "msg_type": "param_query_response",
-        "sent_from": 1000,
         "params" : [["test", "complex"]]
     }
 
@@ -82,7 +81,9 @@ def channel_query(msg):
     return {
         "msg_type": "channel_query_response",
         "kraus_operators": [numpy_to_json(x) for x in kraus_operators],
-        "error": 0 
+        "error": 0,
+        "retrigger": False,
+        "retrigger_time": 0
     }
 
 @qsi.on_message("terminate")

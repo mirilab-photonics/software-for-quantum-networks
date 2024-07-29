@@ -103,6 +103,9 @@ channel_query_response = {
         "sent_from": {"type": "integer"},
         "error": {"type": "number"},
         "message": {"type": "string"},
+        "operation_time": {"type": "number"},
+        "retrigger": {"type": "boolean"},
+        "retrigger_time": {"type": "number"},
         "kraus_operators": {
             "type": "array",
             "items": {  # list of operators
@@ -123,7 +126,8 @@ channel_query_response = {
     },
     "anyOf": [
         {"required": ["kraus_operators", "error"]},
-        {"required": ["message"]}
+        {"required": ["message"]},
+        {"required": ["retrigger", "retrigger_time"]}
     ],
     "required": ["msg_type", "sent_from"],
 }

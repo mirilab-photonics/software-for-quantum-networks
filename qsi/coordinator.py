@@ -53,10 +53,9 @@ class Coordinator(SocketHandler):
     def router(self, message):
         print(message)
         mr = self.get_module_reference(message["sent_from"])[2]
-        print(mr)
         match message["msg_type"]:
             case "param_query_response":
-                if message["params"]:
+                if "params" in message.keys():
                     mr.notify_params(message["params"])
 
         with self.condition:
