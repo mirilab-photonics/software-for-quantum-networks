@@ -36,7 +36,6 @@ class QSI(SocketHandler):
         return decorator
 
     def router(self, message: dict):
-        print(self.message_handlers)
         response = self.message_handlers[message["msg_type"]](message)
         if response is not None:
             self.send_to(self.coordinator_port, response)

@@ -51,7 +51,6 @@ class Coordinator(SocketHandler):
         return mr
 
     def router(self, message):
-        print(message)
         mr = self.get_module_reference(message["sent_from"])[2]
         match message["msg_type"]:
             case "param_query_response":
@@ -72,15 +71,11 @@ class Coordinator(SocketHandler):
     def retry_connection(self, port, json_data, retries=5, delay=2):
         for attempt in range(retries):
             try:
-                print("Sending to")
                 self.send_to(port, json_data)
-                print(f"Successfully connected and sent data to port {port}")
                 return
             except ConnectionRefusedError:
-                print(f"Connection refused on port {port}, retrying...")
                 time.sleep(delay)
                 self.response_received = True
-        print(f"Failed to connect to port {port} after {retries} attempts")
 
 
     def get_module_reference(self, sent_from):

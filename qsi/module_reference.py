@@ -14,7 +14,6 @@ class ModuleReference:
         self.params = []
         if runtime == "python":
             command = ["python", module, str(port), str(coordinator_port)]
-        print(command)
         self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         self.events = {
             "params_known": threading.Event()
@@ -35,10 +34,6 @@ class ModuleReference:
             print(f"[{stream_name}] {line.strip()}")
         stream.close()
 
-    def apply_kraus_operators(state=None):
-        if state is None and not len(self.states) == 1:
-            raise FalseInternalStateNumber(f"Excpected to contain one internal state, but have {len(self.states)}")
-
     def _operate_with_kraus_operators(self):
         pass
 
@@ -47,7 +42,6 @@ class ModuleReference:
 
     def set_param(self, param, value):
         self.events["params_known"].wait()
-        print(param, value)
         print(self.params)
         if self.params[param]["type"]=="complex":
             num = complex(value)
@@ -67,8 +61,6 @@ class ModuleReference:
             "msg_type" : "state_init"
         }
         response = self.coordinator.send_and_return_response(self.port, message)
-        print("\n\n")
-        print(response)
         states = []
         for s in response["states"]:
             states.append(State.from_message(s))
@@ -84,7 +76,7 @@ class ModuleReference:
         if "kraus_operators" in response:
             operators = [json_to_numpy(x) for x in response["kraus_operators"]]
 
-        return operators, float(response["error"])
+        return operators, float(response["error"]), None
 
 
     def terminate(self):

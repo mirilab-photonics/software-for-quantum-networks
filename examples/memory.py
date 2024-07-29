@@ -11,7 +11,7 @@ import numpy as np
 import uuid
 
 qsi = QSI()
-uid = uuid.uuid4
+uid = str(uuid.uuid4())
 
 @qsi.on_message("param_query")
 def param_query(msg):
@@ -50,15 +50,37 @@ def channel_query(msg):
     # Get the uuid of the given input state
     input_uuid = msg["ports"]["input"]
     input_props = state.get_props(input_uuid)
+    internal_props = state.get_props(uid)
 
-    if input_props.state_type not "Light":
-        raise WrongStateTypeException("Expected Light input type, received {input_props.state_type}")
+
+    # Figure out the dimensions of the operator
+    dims = input_props.truncation + internal_props.truncation
+
+    if not input_props.state_type == "light":
+        raise WrongStateTypeException(f"Expected Light input type, received {input_props.state_type}")
 
     # Construct lowering operator for the input state
-    op = np.zeros((input_props.truncation, input_prop.truncation),dtype=np.complex)
-    for n in range(props.truncation -1):
-        operator(n, n+1) = 1
+    op_low = np.zeros((input_props.truncation, input_props.truncation),dtype=complex)
+    for n in range(1, input_props.truncation):
+        n1 = np.array([0 for x in range(input_props.truncation)])
+        n1[n-1] = 1
+        n1 = n1.reshape(-1,1)
+        n2 = np.array([0 for x in range(input_props.truncation)])
+        n2[n] = 1
+        n2 = n2.reshape(1,-1)
+        op_low += np.dot(n1,n2)
 
+    # Construct raising operator for the input state
+    op_rais = np.zeros((input_props.truncation, input_props.truncation),dtype=complex)
+    for n in range(1, input_props.truncation):
+        n1 = np.array([0 for x in range(input_props.truncation)])
+        n1[n] = 1
+        n1 = n1.reshape(-1,1)
+        n2 = np.array([0 for x in range(input_props.truncation)])
+        n2[n-1] = 1
+        n2 = n2.reshape(1,-1)
+        op_rais += np.dot(n1,n2)
+        
 
     # Construct the Kraus operators
     G = np.array([1, 0])
@@ -67,12 +89,34 @@ def channel_query(msg):
     X = np.array([0,1])
     X = X.reshape(-1,1)
 
-    # Compute Error
+    GX = np.dot(G, X.conj().T)
+    XG = np.dot(X, G.conj().T)
+
+    # Computing absorption operator
+    kraus_operators = []
+    kraus_operators.append(
+        np.kron(GX,op_low)
+    )
+    kraus_operators.append(
+        np.kron(XG,op_rais)
+    )
+    kraus_operators.append(
+        np.sqrt(np.eye(kraus_operators[0].shape[0])- sum([k.conj().T@k for k in kraus_operators]))
+    )
+
+    # Compute error
+    error = 0
 
     # Construct message
+    return {
+        "msg_type": "channel_query_response",
+        "kraus_operators": [numpy_to_json(x) for x in kraus_operators],
+        "error": 0,
+        "retrigger": True,
+        "retrigger_time": 1,  # Should retrigger in one second
+        "operation_time": 1e-10
+    }
 
-    raise Exception("DEBUG")
-    pass
 
 @qsi.on_message("terminate")
 def terminate(msg):
