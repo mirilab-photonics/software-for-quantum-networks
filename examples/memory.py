@@ -45,7 +45,6 @@ def state_init(msg):
 @qsi.on_message("channel_query")
 def channel_query(msg):
     state = State.from_message(msg)
-    print(msg)
 
     # Get the uuid of the given input state
     input_uuid = msg["ports"]["input"]
@@ -104,6 +103,8 @@ def channel_query(msg):
         np.sqrt(np.eye(kraus_operators[0].shape[0])- sum([k.conj().T@k for k in kraus_operators]))
     )
 
+    kraus_indices = [internal_props.uuid, input_uuid]
+
     # Compute error
     error = 0
 
@@ -111,6 +112,7 @@ def channel_query(msg):
     return {
         "msg_type": "channel_query_response",
         "kraus_operators": [numpy_to_json(x) for x in kraus_operators],
+        "kraus_state_indices": kraus_indices,
         "error": 0,
         "retrigger": True,
         "retrigger_time": 1,  # Should retrigger in one second

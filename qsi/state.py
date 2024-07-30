@@ -75,6 +75,9 @@ class State:
     def get_props(self, uuid) -> StateProp:
         return [x for x in self.state_props if x.uuid == uuid][0]
 
+    def get_all_props(self, uuids) -> list[StateProp]:
+        return [x for x in self.state_props if x.uuid in uuids]
+
     def _reorder(self, *uuids):
         """
         Reorders the spaces in the product space
@@ -193,6 +196,7 @@ class State:
         # Determine the shape of the kraus operators
         kraus_shape = [prop.truncation for prop in operation_spaces]*2
         for K in operators:
+            K = K.reshape(kraus_shape)
             new_state += np.einsum(K, op_1_idcs,
                       self.state, state_idcs,
                       K.conj(), op_2_idcs,

@@ -50,7 +50,7 @@ class Coordinator(SocketHandler):
         self.modules.append((module, port, mr))
         return mr
 
-    def router(self, message):
+    def _router(self, message):
         mr = self.get_module_reference(message["sent_from"])[2]
         match message["msg_type"]:
             case "param_query_response":

@@ -123,8 +123,8 @@ channel_query_response = {
                 }
             }
         },
-        "kraus_state_indices" {
-            "type": "list",
+        "kraus_state_indices": {
+            "type": "array",
             "items": {
                 "type": "string",
                 "minItems": 1
@@ -132,7 +132,7 @@ channel_query_response = {
         }
     },
     "anyOf": [
-        {"required": ["kraus_operators", "error"]},
+        {"required": ["kraus_operators", "error", "kraus_state_indices"]},
         {"required": ["message"]},
         {"required": ["retrigger", "retrigger_time"]}
     ],

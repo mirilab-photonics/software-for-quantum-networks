@@ -76,7 +76,7 @@ class ModuleReference:
         if "kraus_operators" in response:
             operators = [json_to_numpy(x) for x in response["kraus_operators"]]
 
-        return operators, float(response["error"]), None
+        return operators, response["kraus_state_indices"], float(response["error"]), None
 
 
     def terminate(self):

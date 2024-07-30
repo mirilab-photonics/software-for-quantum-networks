@@ -55,23 +55,16 @@ def channel_query(msg):
         }
 
     # Create operator, which only acts on the designated space
+    # Coordinator will handle correct application to the state
     operator = np.zeros((prop.truncation, prop.truncation))
     for n in range(prop.truncation-1):
         operator[n+1, n] = 1
 
-    # Pad Operator, so that it can act on the potential product space
-    padded_operator = 1
-    for p in state.state_props:
-        if p.uuid == uuid:
-            padded_operator = np.kron(padded_operator, operator)
-        else:
-            padded_operator = np.kron(padded_operator, np.eye(p.truncation))
-
     # Find other operator
-    other_operator = np.sqrt(np.eye(padded_operator.shape[0]) - padded_operator.conjugate().T @ padded_operator)
+    other_operator = np.sqrt(np.eye(operator.shape[0]) - operator.conjugate().T @ operator)
 
     # Assemble the operators
-    kraus_operators = [padded_operator, other_operator]
+    kraus_operators = [operator, other_operator]
 
     # Compute error
     # TODO: Add error computation
@@ -81,6 +74,7 @@ def channel_query(msg):
     return {
         "msg_type": "channel_query_response",
         "kraus_operators": [numpy_to_json(x) for x in kraus_operators],
+        "kraus_state_indices": [uuid],
         "error": 0,
         "retrigger": False,
         "retrigger_time": 0

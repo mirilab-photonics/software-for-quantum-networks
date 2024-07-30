@@ -60,7 +60,7 @@ class SocketHandler:
                         message = data.decode()
                         message = json.loads(message)
                         self.response_message = message
-                        self.router(message)
+                        self._router(message)
 
     def recvall(self, conn, n):
         """
