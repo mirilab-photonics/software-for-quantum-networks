@@ -47,7 +47,11 @@ mem_kraus, mem_kraus_spaces, error, retry = mem.channel_query(
     state_one, {"input": state_one.state_props[0].uuid}
 )
 
-state_one.apply_kraus_operators(mem_kraus, state_one.get_all_props(mem_kraus_spaces))
+if retry:
+    mem_kraus, mem_kraus_spaces, error, retry = mem.channel_query(
+        state_one, {"input": state_one.state_props[0].uuid}
+    )
+    state_one.apply_kraus_operators(mem_kraus, state_one.get_all_props(mem_kraus_spaces))
 
 
 

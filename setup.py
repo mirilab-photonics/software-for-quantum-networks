@@ -13,6 +13,6 @@ setup(
     license="Apache 2.0",
     packages=find_packages(where="."),
     install_requires=[
-        "numpy", "type_enforced"
+        "numpy", "type_enforced", "scipy"
     ],
 )

@@ -204,3 +204,53 @@ class State:
 
         dims = [p.truncation for p in self.state_props]
         self.state = new_state.reshape([np.prod(dims)]*2)
+
+    @Enforcer
+    def get_reduced_state(self, spaces:list[StateProp]) -> np.ndarray:
+        """
+        Traces out the state and returns the subspace with the giben uid.
+        Does not modify the state.
+        """
+        dims = [p.truncation for p in self.state_props]
+        out_dims = [p.truncation for p in spaces]
+        reshaped_dims = [dim for dim in dims] + [dim for dim in dims]
+        self.state = self.state.reshape(reshaped_dims)
+
+        counter = itertools.count(start=0)
+        state_order = [prop.uuid for prop in self.state_props]
+        
+        indices = {}
+        for uid in state_order:
+            indices[uid] = {
+                1: None,
+                2: None,
+            }
+
+        state_idcs = []
+        to_idcs = []
+
+        for i in range(2):
+            for idc in state_order:
+                if i == 0:
+                    val = next(counter)
+                    if idc in uid:
+                        to_idcs.append(val)
+                    state_idcs.append(val)
+                    indices[idc][1]=val
+                else:
+                    if idc in uid:
+                        val = next(counter)
+                        to_idcs.append(val)
+                    else:
+                        val = indices[idc][1]
+                    state_idcs.append(val)
+                    indices[idc][2]=val
+
+        reduced_state = np.einsum(
+            self.state, state_idcs,
+            to_idcs
+        )
+
+        self.state = self.state.reshape([np.prod(dims)]*2)
+        return reduced_state
+        return reduced_state.reshape([np.prod(out_dims)]*2)

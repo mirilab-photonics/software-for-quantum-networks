@@ -34,12 +34,6 @@ class ModuleReference:
             print(f"[{stream_name}] {line.strip()}")
         stream.close()
 
-    def _operate_with_kraus_operators(self):
-        pass
-
-    def state_init_response(self):
-        print("State init response")
-
     def set_param(self, param, value):
         self.events["params_known"].wait()
         print(self.params)

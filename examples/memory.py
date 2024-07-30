@@ -108,13 +108,22 @@ def channel_query(msg):
     # Compute error
     error = 0
 
+
+    # decide on retriggering possibility and time
+    state.apply_kraus_operators(kraus_operators, [internal_props, input_props])
+    resulting_state = state.get_reduced_state([internal_props])
+    retrigger = False
+    if resulting_state[0][0] != 1:
+        retrigger = True
+        
+
     # Construct message
     return {
         "msg_type": "channel_query_response",
         "kraus_operators": [numpy_to_json(x) for x in kraus_operators],
         "kraus_state_indices": kraus_indices,
         "error": 0,
-        "retrigger": True,
+        "retrigger": retrigger,
         "retrigger_time": 1,  # Should retrigger in one second
         "operation_time": 1e-10
     }

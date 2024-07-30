@@ -10,8 +10,8 @@ import time
 import numpy as np
 import uuid
 
+# Initiate the QSI object instance
 qsi = QSI()
-STATE_UUIDS = []
 
 @qsi.on_message("state_init")
 def state_init(msg):
@@ -25,7 +25,7 @@ def state_init(msg):
 def param_query(msg):
     """
     Single Photon Source
-    declares no parameters
+    declares only example parameter 'test'
     """
     return {
         "msg_type": "param_query_response",

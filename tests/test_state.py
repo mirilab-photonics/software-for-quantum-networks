@@ -81,5 +81,24 @@ class TestKrausOperatorApply(unittest.TestCase):
         np.testing.assert_array_equal(expected_state, A.state)
         
 
+
+class TestStateReduction(unittest.TestCase):
+
+    def test_simple_reduction(self):
+        pA = StateProp(state_type="light", truncation=2, wavelength=700, polarization="R")
+        pB = StateProp(state_type="internal", truncation=3)
+
+        test_state = np.zeros((6,6))
+        test_state[0,0] = 1
+
+        A = State(pA)
+        B = State(pB)
+
+        A.merge(B)
+        state = A.get_reduced_state([pA])
+        print(state)
+        print(A.state)
+
+
 if __name__ == "__main__":
     unittest.main()
