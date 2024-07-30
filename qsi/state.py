@@ -5,6 +5,9 @@ from dataclasses import dataclass, field, asdict
 import numpy as np
 from typing import Literal, Optional
 import uuid
+import itertools
+
+from type_enforced import Enforcer
 
 from qsi.helpers import numpy_to_json, json_to_numpy
 
@@ -73,7 +76,7 @@ class State:
         return self.state_props[self.get_index(uuid)]
 
 
-    def apply_kraus_operators(self, operators: list, states: list):
+    def apply_kraus_operators_old(self, operators: list, states: list):
         """
         Apply the kraus operators to the correct states
         -----
@@ -126,6 +129,92 @@ class State:
         self.state_props = new_prop_order
         self.state = self.state.reshape(np.prod(dims), np.prod(dims))
 
+    @Enforcer
+    def apply_kraus_operators(self, operators:list,
+                              operation_spaces:list[StateProp]):
+        
+        for p in operation_spaces:
+            assert p in self.state_props
 
-    def apply_kraus_operators(self, operators, uuids):
-        pass
+        # First we reshape the state matrix
+        dims = [p.truncation for p in self.state_props]
+        reshaped_dims = [dim for dim in dims] + [dim for dim in dims]
+        self.state = self.state.reshape(reshaped_dims)
+
+        # Get the order of the spaces in the product space
+        state_order = [prop.uuid for prop in self.state_props]
+        operator_order = [prop.uuid for prop in operation_spaces]
+
+        # We will keep track of the three sets of indices for each space
+        indices = {}
+        for uid in state_order:
+            indices[uid] = {
+                1: [],  # indices in first operator
+                2: [],  # indices in the state
+                3: []   # indices in the second operator
+            }
+
+        op_1_idcs = [] # First operator indices
+        state_idcs = [] # State indices
+        op_2_idcs = [] # Second operator indices
+        result_idcs = [] # Resulting indices
+
+        counter = itertools.count(start=0)
+
+        # Assigning first operator indices
+        for i in range(2):
+            for idc in operator_order:
+                val = next(counter)
+                op_1_idcs.append(val)
+                indices[idc][1].append(val)
+
+        # Assigning state indices
+        for i in range(2):
+            for idc in state_order:
+                if idc in operator_order and i == 0:
+                    val = indices[idc][1][0]
+                else:
+                    val = next(counter)
+                state_idcs.append(val)
+                indices[idc][2].append(val)
+
+        # Assigning second operator indices
+        for i in range(2):
+            for idc in operator_order:
+                if i == 0:
+                    val = next(counter)
+                else:
+                    val = indices[idc][2][1]
+                op_2_idcs.append(val)
+                indices[idc][3].append(val)
+
+        # Assigning resulting indices
+        for i in range(2):
+            for idc in state_order:
+                if idc in operator_order:
+                    if i == 0:
+                        val = indices[idc][1][1]
+                    elif i == 1:
+                        val = indices[idc][3][0]
+                else:
+                    val = indices[idc][2][i]
+                result_idcs.append(val)
+                        
+
+        #print(f"op_1_idcs: {op_1_idcs}")
+        #print(f"state_idcs: {state_idcs}")
+        #print(f"op_2_idcs: {op_2_idcs}")
+        #print(f"result_idcs:{result_idcs}")
+
+        new_state = np.zeros_like(self.state)
+
+        # Determine the shape of the kraus operators
+        kraus_shape = [prop.truncation for prop in operation_spaces]*2
+        for K in operators:
+            new_state += np.einsum(K, op_1_idcs,
+                      self.state, state_idcs,
+                      K.conj(), op_2_idcs,
+                      result_idcs)
+
+        dims = [p.truncation for p in self.state_props]
+        self.state = new_state.reshape([np.prod(dims)]*2)

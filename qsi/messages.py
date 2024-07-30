@@ -122,6 +122,13 @@ channel_query_response = {
                     }
                 }
             }
+        },
+        "kraus_state_indices" {
+            "type": "list",
+            "items": {
+                "type": "string",
+                "minItems": 1
+            }
         }
     },
     "anyOf": [

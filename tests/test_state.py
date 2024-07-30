@@ -44,5 +44,42 @@ class TestStateReorder(unittest.TestCase):
         self.assertEqual(expected_order, actual_order)
 
 
+class TestKrausOperatorApply(unittest.TestCase):
+
+    def test_identity_kraus_operators(self):
+        pA = StateProp(state_type="light", truncation=2, wavelength=700, polarization="R")
+        pB = StateProp(state_type="internal", truncation=3)
+
+        A = State(pA)
+        A.state[0,0] = 0
+        A.state[1,1] = 1
+        B = State(pB)
+        A.merge(B)
+        original_state = A.state.copy()
+        A.apply_kraus_operators([np.eye(pA.truncation)],[pA])
+        np.testing.assert_array_equal(original_state, A.state)
+
+
+    def test_X_kraus_operator(self):
+        pA = StateProp(state_type="light", truncation=2, wavelength=700, polarization="R")
+        pB = StateProp(state_type="internal", truncation=3)
+
+        test_state = np.zeros((6,6))
+        test_state[0,0] = 1
+
+        A = State(pA)
+        B = State(pB)
+
+        A.merge(B)
+        np.testing.assert_array_equal(test_state, A.state)
+        op1 = np.array([[0,1],[1,0]])
+        A.apply_kraus_operators([op1], [pA])
+        expected_state = np.kron(
+            np.array([[0,0],[0,1]]),
+            np.array([[1,0,0],[0,0,0],[0,0,0]]),
+        )
+        np.testing.assert_array_equal(expected_state, A.state)
+        
+
 if __name__ == "__main__":
     unittest.main()
