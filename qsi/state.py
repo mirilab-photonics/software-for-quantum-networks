@@ -72,30 +72,12 @@ class State:
         ids = [x.uuid for x in self.state_props]
         return ids.index(uuid)
 
-    def get_props(self, uuid:str) -> dict:
-        return self.state_props[self.get_index(uuid)]
-
-
-    def apply_kraus_operators_old(self, operators: list, states: list):
-        """
-        Apply the kraus operators to the correct states
-        -----
-        Given list of kraus operators, apply the operators,
-        Besides the operator list, ids of the respective states must be given in the correct order, reflecting the order of operators in the product spaces
-        """
-        new_state = None
-        for op in operators:
-            if new_state is None:
-                new_state = op @ self.state @ op.conjugate().T
-            else:
-                new_state += op @ self.state @ op.conjugate().T
-        self.state = new_state
-
     def get_props(self, uuid) -> StateProp:
         return [x for x in self.state_props if x.uuid == uuid][0]
 
     def _reorder(self, *uuids):
         """
+        Reorders the spaces in the product space
         """
 
         dims = [prop.truncation for prop in self.state_props]
