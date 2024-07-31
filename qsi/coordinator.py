@@ -27,13 +27,16 @@ def is_port_open(port, host='localhost', timeout=1.0):
             return False
     
 class Coordinator(SocketHandler):
-    def __init__(self):
-        parser = argparse.ArgumentParser(description="Coordinator arg parser")
-        parser.add_argument("coordinator_port", type=int, help="Coordinator port")
-        args = parser.parse_args()
-        super().__init__(listening_port=args.coordinator_port)
+    def __init__(self, port:int=None):
+        if port is None:
+            parser = argparse.ArgumentParser(description="Coordinator arg parser")
+            parser.add_argument("coordinator_port", type=int, help="Coordinator port")
+            args = parser.parse_args()
+            self.coordinator_port = args.coordinator_port
+        else:
+            self.coordinator_port = port
+        super().__init__(listening_port=self.coordinator_port)
         self.modules = []
-        self.coordinator_port = args.coordinator_port
         self.condition = threading.Condition()
         self.response_received = True
 
@@ -43,7 +46,7 @@ class Coordinator(SocketHandler):
             msg = {"msg_type": "param_query"}
             self.retry_connection(port, msg)
 
-    def register_componnet(self, module, port=None, runtime="python"):
+    def register_component(self, module, port=None, runtime="python"):
         if port is None:
             port = find_empty_port()
         mr = ModuleReference(module, port, self.coordinator_port, runtime, self)

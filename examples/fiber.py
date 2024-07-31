@@ -19,6 +19,7 @@ qsi = QSI()
 # Store the parameters
 LENGTH = None
 REFRACTIVE_INDEX = None
+C0 = 299999999 # Speed of light in vacuum 
 
 @qsi.on_message("state_init")
 def state_init(msg):
@@ -35,7 +36,7 @@ def state_init(msg):
 @qsi.on_message("param_query")
 def param_query(msg):
     """
-
+    Fiber expects two number (float) parameters: length and n (refractive index)
     """
     return {
         "msg_type": "param_query_response",
@@ -47,17 +48,22 @@ def param_set(msg):
     """
     Single photon source doesn't require any parameters
     """
+    global LENGTH
+    global REFRACTIVE_INDEX
     params = msg["params"]
     if "length" in params:
-        LENGTH = float(params.get("length"))
+        LENGTH = float(params["length"].get("value"))
     if "n" in params:
-        REFRACTIVE_INDEX = float(params.get("length"))
+        REFRACTIVE_INDEX = float(params["n"].get("value"))
     return {
         "msg_type": "param_set_response",
     }
 
 @qsi.on_message("channel_query")
 def channel_query(msg):
+    global LENGTH
+    global REFRACTIVE_INDEX
+    global C0
     state = State.from_message(msg)
     uuid = msg["ports"]["input"]
     prop = state.get_props(uuid)
@@ -80,12 +86,13 @@ def channel_query(msg):
     eta = 10**((-20*0.01)/(LENGTH))
     phi = (2*np.pi*REFRACTIVE_INDEX*LENGTH)/(prop.wavelength*10**(-9))
     n_max = prop.truncation-1 # Maximum number of photons in the system
-    U_phi = expm(-1j * phi * n )
-    U_phi_half = expm(-1j * phi * n / 2)
+    N = np.diag(np.arange(prop.truncation))
+    U_phi = expm(-1j * phi * N )
+    U_phi_half = expm(-1j * phi * N / 2)
 
     a = np.zeros((prop.truncation, prop.truncation))
     for n in range(prop.truncation-1):
-        operator[n, n+1] = 1
+        a[n, n+1] = 1
 
     kraus_operators = []
     for k in range(prop.truncation):
@@ -100,13 +107,16 @@ def channel_query(msg):
             K_k = factor * U_phi_half @ a_k @ U_phi_half
             kraus_operators.append(K_k)
 
+    operating_time = LENGTH / (REFRACTIVE_INDEX * C0)
+
     return {
         "msg_type": "channel_query_response",
         "kraus_operators": [numpy_to_json(x) for x in kraus_operators],
         "kraus_state_indices": [uuid],
         "error": 0,
         "retrigger": False,
-        "retrigger_time": 0
+        "retrigger_time": 0,
+        "operating_time": operating_time
     }
 
 @qsi.on_message("terminate")

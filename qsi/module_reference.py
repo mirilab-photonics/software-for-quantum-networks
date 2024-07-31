@@ -36,7 +36,6 @@ class ModuleReference:
 
     def set_param(self, param, value):
         self.events["params_known"].wait()
-        print(self.params)
         if self.params[param]["type"]=="complex":
             num = complex(value)
             self.params[param]["value"] = [num.real, num.imag]
@@ -69,8 +68,7 @@ class ModuleReference:
         response = self.coordinator.send_and_return_response(self.port, message)
         if "kraus_operators" in response:
             operators = [json_to_numpy(x) for x in response["kraus_operators"]]
-
-        return operators, response["kraus_state_indices"], float(response["error"]), None
+        return response, operators
 
 
     def terminate(self):
