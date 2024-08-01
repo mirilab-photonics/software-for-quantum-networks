@@ -6,10 +6,10 @@ from qsi.state import State, StateProp
 class TestStateReorder(unittest.TestCase):
     def setUp(self):
         # Create StateProp instances
-        self.state_prop_A = StateProp(state_type="light", truncation=2, wavelength=700, polarization="R")
-        self.state_prop_B = StateProp(state_type="internal", truncation=3)
-        self.state_prop_C = StateProp(state_type="internal", truncation=4)
-        self.state_prop_D = StateProp(state_type="light", truncation=2, wavelength=800, polarization="L")
+        self.state_prop_A = StateProp(state_type="light", truncation=2, wavelength=700, polarization="R", uuid="A")
+        self.state_prop_B = StateProp(state_type="internal", truncation=3, uuid="B")
+        self.state_prop_C = StateProp(state_type="internal", truncation=4, uuid="C")
+        self.state_prop_D = StateProp(state_type="light", truncation=2, wavelength=800, polarization="L", uuid="D")
         
         # Create State instances
         self.state_A = State(self.state_prop_A)
@@ -28,15 +28,15 @@ class TestStateReorder(unittest.TestCase):
 
 
     def test_simple_reorder(self):
-        pA = StateProp(state_type="light", truncation=2, wavelength=700, polarization="R")
-        pB = StateProp(state_type="internal", truncation=3)
+        pA = StateProp(state_type="light", truncation=2, wavelength=700, polarization="R", uuid="A")
+        pB = StateProp(state_type="internal", truncation=3, uuid="B")
 
         A = State(pA)
         A.state[0,0] = 0
         A.state[1,1] = 1
         B = State(pB)
         A.merge(B)
-        A._reorder(pB.uuid, pA.uuid)
+        A._reorder([pB, pA])
 
         self.assertEqual(A.state[1,1],1)
         expected_order = [pB.uuid, pA.uuid]
@@ -79,7 +79,7 @@ class TestKrausOperatorApply(unittest.TestCase):
             np.array([[1,0,0],[0,0,0],[0,0,0]]),
         )
         np.testing.assert_array_equal(expected_state, A.state)
-        
+
 
 
 class TestStateReduction(unittest.TestCase):
@@ -96,6 +96,7 @@ class TestStateReduction(unittest.TestCase):
 
         A.merge(B)
         state = A.get_reduced_state([pA])
+        print("REDUCTION")
         print(state)
         print(A.state)
 

@@ -76,9 +76,11 @@ class State:
         return [x for x in self.state_props if x.uuid == uuid][0]
 
     def get_all_props(self, uuids) -> list[StateProp]:
-        return [x for x in self.state_props if x.uuid in uuids]
+        uuid_to_prop = {x.uuid: x for x in self.state_props}
+        return [uuid_to_prop[uuid] for uuid in uuids if uuid in uuid_to_prop]
 
-    def _reorder(self, *uuids):
+    @Enforcer
+    def _reorder(self, new_prop_order:list[StateProp]):
         """
         Reorders the spaces in the product space
         """
@@ -86,31 +88,50 @@ class State:
         dims = [prop.truncation for prop in self.state_props]
 
         # Figuring out old and new order
+        new_uuids = [p.uuid for p in new_prop_order]
         current_order = [prop.uuid for prop in self.state_props]
-        indices = [current_order.index(uuid) for uuid in uuids]
-        remaining_indices = [i for i in range(len(current_order)) if i not in indices]
-        new_order = indices + remaining_indices
+        remove_set = set([p.uuid for p in new_prop_order])
+        new_order = [uid for uid in current_order if uid not in remove_set]
+        new_order = [p.uuid for p in new_prop_order] + new_order
 
-        #current_string = ''.join(chr(97+i) for i in range(2*len(dims)))
-        current_string = ''.join(chr(97 + i) for i in range(len(dims) * 2))
-        new_string = ''
-        num_subsystems = len(dims)
-        for b in range(2):
-            for i in range(num_subsystems):
-                new_string += str(
-                    chr(97+b*num_subsystems+new_order.index(i))
-                    )
-        new_string = "badc"
 
-        einsum_string = f"{current_string}->{new_string}"
+        indices = {}
+        for uid in current_order:
+            indices[uid] = {
+                1: [],
+                2: []
+            }
+
+        e_start = []
+        counter = itertools.count(start=0)
+
+        for i in range(2):
+            for uid in current_order:
+                if i == 0:
+                    val = next(counter)
+                    indices[uid][1] = val
+                if i == 1:
+                    val = next(counter)
+                    indices[uid][2] = val
+        
+                e_start.append(val)
+
+        e_finish = []
+        for i in range(2):
+            for uid in new_order:
+                if i == 0:
+                    val = indices[uid][1]
+                else:
+                    val = indices[uid][2]
+                e_finish.append(val)
+
 
         # Preparing state for reordering by reshaping
         reshaped_dims = [dim for dim in dims] + [dim for dim in dims]
         self.state = self.state.reshape(reshaped_dims)
 
-        self.state = np.einsum(einsum_string, self.state)
-
-        new_prop_order = [self.state_props[i] for i in new_order]
+        self.state = np.einsum(self.state, e_start, e_finish)
+        new_prop_order = self.get_all_props(new_order)
         self.state_props = new_prop_order
         self.state = self.state.reshape(np.prod(dims), np.prod(dims))
 
@@ -120,6 +141,8 @@ class State:
         
         for p in operation_spaces:
             assert p in self.state_props
+
+        state_order = [prop.uuid for prop in self.state_props]
 
         # First we reshape the state matrix
         dims = [p.truncation for p in self.state_props]
@@ -157,7 +180,7 @@ class State:
         for i in range(2):
             for idc in state_order:
                 if idc in operator_order and i == 0:
-                    val = indices[idc][1][0]
+                    val = indices[idc][1][1]
                 else:
                     val = next(counter)
                 state_idcs.append(val)
@@ -178,7 +201,7 @@ class State:
             for idc in state_order:
                 if idc in operator_order:
                     if i == 0:
-                        val = indices[idc][1][1]
+                        val = indices[idc][1][0]
                     elif i == 1:
                         val = indices[idc][3][0]
                 else:
@@ -191,8 +214,9 @@ class State:
         #print(f"op_2_idcs: {op_2_idcs}")
         #print(f"result_idcs:{result_idcs}")
 
-        new_state = np.zeros_like(self.state)
 
+
+        new_state = np.zeros_like(self.state)
         # Determine the shape of the kraus operators
         kraus_shape = [prop.truncation for prop in operation_spaces]*2
         for K in operators:
@@ -228,6 +252,7 @@ class State:
 
         state_idcs = []
         to_idcs = []
+        uid = [x.uuid for x in spaces]
 
         for i in range(2):
             for idc in state_order:
@@ -245,12 +270,10 @@ class State:
                         val = indices[idc][1]
                     state_idcs.append(val)
                     indices[idc][2]=val
-
         reduced_state = np.einsum(
             self.state, state_idcs,
             to_idcs
         )
 
         self.state = self.state.reshape([np.prod(dims)]*2)
-        return reduced_state
         return reduced_state.reshape([np.prod(out_dims)]*2)
