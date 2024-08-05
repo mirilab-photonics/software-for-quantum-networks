@@ -40,7 +40,10 @@ def param_query(msg):
     """
     return {
         "msg_type": "param_query_response",
-        "params" : [["length", "number"], ["n", "number"]]
+        "params" : {
+            "length": "number",
+            "n": "number"
+        }
     }
 
 @qsi.on_message("param_set")

@@ -44,7 +44,7 @@ class State:
             self.state[0,0] = 1
             self.dimensions = state_prop.truncation
 
-    def merge(self, other: "State"):
+    def join(self, other: "State"):
         self.state = np.kron(self.state, other.state)
         self.state_props.extend(other.state_props)
         self.dimensions *= other.dimensions
@@ -138,7 +138,43 @@ class State:
     @Enforcer
     def apply_kraus_operators(self, operators:list,
                               operation_spaces:list[StateProp]):
-        
+        """
+        Applies a set of Kraus operators to a specified subspace of the system's state.
+
+        This method takes a list of Kraus operators and applies them to the state of the system,
+        specifically within the subspace defined by `operation_spaces`. The Kraus operators should
+        correspond to these operation spaces in the given order.
+
+        Parameters
+        ----------
+        operators : list
+            A list of numpy arrays representing the Kraus operators. Each operator should be 
+            appropriately shaped to match the dimensions of the corresponding `operation_spaces`.
+
+        operation_spaces : list[StateProp]
+            A list of `StateProp` objects defining the subspace on which the Kraus operators act.
+            The order of these objects must match the order of the spaces in the Kraus operators.
+
+        Raises
+        ------
+        AssertionError
+            If any `StateProp` in `operation_spaces` is not present in `self.state_props`.
+
+        Notes
+        -----
+        - The method reshapes the current state to a multi-dimensional array corresponding to
+        the direct product space of the system's state properties.
+        - The indices for contraction are carefully assigned to match the Kraus operators and 
+        the state, ensuring proper application of the Kraus operators.
+        - The result is stored back in the `self.state` attribute after reshaping to the original 
+        matrix form.
+
+        Example
+        -------
+        If `self.state_props` contains subsystems A and B, and the Kraus operators act on subsystem A,
+        then `operation_spaces` should specify subsystem A, and the method will apply the Kraus
+        operators to subsystem A, leaving subsystem B unchanged.
+        """
         for p in operation_spaces:
             assert p in self.state_props
 
@@ -214,8 +250,6 @@ class State:
         #print(f"op_2_idcs: {op_2_idcs}")
         #print(f"result_idcs:{result_idcs}")
 
-
-
         new_state = np.zeros_like(self.state)
         # Determine the shape of the kraus operators
         kraus_shape = [prop.truncation for prop in operation_spaces]*2
@@ -232,8 +266,36 @@ class State:
     @Enforcer
     def get_reduced_state(self, spaces:list[StateProp]) -> np.ndarray:
         """
-        Traces out the state and returns the subspace with the giben uid.
-        Does not modify the state.
+        Returns the reduced state of the system by tracing out the specified subspaces.
+
+        This method computes the reduced density matrix of the system's state over the specified
+        subspaces (`spaces`). It effectively traces out the other subsystems not included in 
+        `spaces`, resulting in a state that only includes the specified subspaces.
+
+        Parameters
+        ----------
+        spaces : list[StateProp]
+            A list of `StateProp` objects representing the subspaces to retain in the reduced state.
+            The state of the system will be traced over all other subsystems not included in this list.
+
+        Returns
+        -------
+        np.ndarray
+            A numpy array representing the reduced density matrix corresponding to the specified 
+            subspaces.
+
+        Notes
+        -----
+        - The method reshapes the current state to a multi-dimensional array corresponding to
+        the direct product space of the system's state properties.
+        - It uses the Einstein summation convention to perform the partial trace operation, 
+        effectively tracing out the subsystems not specified in `spaces`.
+        - The original state is not modified by this method.
+
+        Example
+        -------
+        If `self.state_props` contains subsystems A, B, and C, and `spaces` specifies subsystem A and C,
+        then the method will return the reduced density matrix of subsystems A and C, tracing out subsystem B.
         """
         dims = [p.truncation for p in self.state_props]
         out_dims = [p.truncation for p in spaces]
@@ -277,3 +339,4 @@ class State:
 
         self.state = self.state.reshape([np.prod(dims)]*2)
         return reduced_state.reshape([np.prod(out_dims)]*2)
+

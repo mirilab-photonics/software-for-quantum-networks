@@ -48,7 +48,7 @@ sps_kraus, sps_kraus_spaces, error, retry = sps.channel_query(
 state_one.apply_kraus_operators(
     sps_kraus, state_one.get_all_props(sps_kraus_spaces))
 
-state_one.merge(state_mem)
+state_one.join(state_mem)
 
 mem_kraus, mem_kraus_spaces, error, retry = mem.channel_query(
     state_one, {"input": state_one.state_props[0].uuid}

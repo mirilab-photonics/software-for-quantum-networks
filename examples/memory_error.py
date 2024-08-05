@@ -212,7 +212,7 @@ def channel_query(msg):
 
     # We construct the whole space
     state_copy = actual_internal_state
-    state_copy.merge(input_state_copy)
+    state_copy.join(input_state_copy)
 
     # We construct the kraus operators for the given state and the copy state
     kraus_operators, kraus_indices = get_kraus_operators(input_props, internal_props)

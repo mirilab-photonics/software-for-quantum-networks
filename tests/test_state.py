@@ -21,10 +21,10 @@ class TestStateReorder(unittest.TestCase):
         self.state_D.state[0,0] = 0
         self.state_D.state[1,1] = 1
         
-        # Merge states to create a product space
-        self.state_A.merge(self.state_B)
-        self.state_A.merge(self.state_C)
-        self.state_A.merge(self.state_D)
+        # Join states to create a product space
+        self.state_A.join(self.state_B)
+        self.state_A.join(self.state_C)
+        self.state_A.join(self.state_D)
 
 
     def test_simple_reorder(self):
@@ -35,7 +35,7 @@ class TestStateReorder(unittest.TestCase):
         A.state[0,0] = 0
         A.state[1,1] = 1
         B = State(pB)
-        A.merge(B)
+        A.join(B)
         A._reorder([pB, pA])
 
         self.assertEqual(A.state[1,1],1)
@@ -54,7 +54,7 @@ class TestKrausOperatorApply(unittest.TestCase):
         A.state[0,0] = 0
         A.state[1,1] = 1
         B = State(pB)
-        A.merge(B)
+        A.join(B)
         original_state = A.state.copy()
         A.apply_kraus_operators([np.eye(pA.truncation)],[pA])
         np.testing.assert_array_equal(original_state, A.state)
@@ -70,7 +70,7 @@ class TestKrausOperatorApply(unittest.TestCase):
         A = State(pA)
         B = State(pB)
 
-        A.merge(B)
+        A.join(B)
         np.testing.assert_array_equal(test_state, A.state)
         op1 = np.array([[0,1],[1,0]])
         A.apply_kraus_operators([op1], [pA])
@@ -94,7 +94,7 @@ class TestStateReduction(unittest.TestCase):
         A = State(pA)
         B = State(pB)
 
-        A.merge(B)
+        A.join(B)
         state = A.get_reduced_state([pA])
         print("REDUCTION")
         print(state)

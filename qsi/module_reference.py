@@ -25,9 +25,9 @@ class ModuleReference:
 
     def notify_params(self, params):
         self.events["params_known"].set()
-        self.params = {
-            x[0]:{"type":x[1], "value":None} for x in params
-        }
+        self.params = params
+        self.params = {name: {"value":None, "type": param_type} for name, param_type in params.items()}
+        print(self.params)
 
     def _capture_output(self, stream, stream_name):
         for line in iter(stream.readline, ''):

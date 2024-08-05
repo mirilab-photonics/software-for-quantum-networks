@@ -34,7 +34,9 @@ def param_query(msg):
     """
     return {
         "msg_type": "param_query_response",
-        "params" : [["alpha", "complex"]]
+        "params" : {
+            "alpha": "complex"
+        }
     }
 
 @qsi.on_message("param_set")
@@ -46,7 +48,6 @@ def param_set(msg):
     params = msg["params"]
     if "alpha" in params:
         ALPHA = complex(*params["alpha"].get("value"))
-    print(ALPHA)
     return {
         "msg_type": "param_set_response",
     }

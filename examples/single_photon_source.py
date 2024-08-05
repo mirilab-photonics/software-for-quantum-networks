@@ -28,8 +28,7 @@ def param_query(msg):
     declares only example parameter 'test'
     """
     return {
-        "msg_type": "param_query_response",
-        "params" : [["test", "complex"]]
+        "msg_type": "param_query_response"
     }
 
 @qsi.on_message("param_set")

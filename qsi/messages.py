@@ -17,17 +17,13 @@ param_query_response = {
         "msg_type": {"type": "string", "enum": ["param_query_response"]},
         "sent_from": {"type": "integer"},
         "params": {
-            "type": "array",
-            "items": {
-                "type": "array",
-                "minItems": 2,
-                "maxItems": 2,
-                "items": [
-                    {"type": "string"},
-                    {"type": "string", "enum": ["integer", "number", "string", "complex"]}
-                ]
-            },
-            "uniqueItems": True
+            "type": "object",
+            "patternProperties": {
+                "^[a-zA-Z_][a-zA-Z0-9_]*$": {
+                    "type": "string",
+                    "enum": ["integer", "number", "string", "complex"]
+                }
+            }
         }
     },
     "required": ["msg_type", "sent_from"],
