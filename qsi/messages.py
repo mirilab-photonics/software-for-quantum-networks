@@ -87,6 +87,14 @@ channel_query = {
     "type": "object",
     "properties": {
         "msg_type": {"type": "string", "enum": ["channel_query"]},
+        "signals":{
+            "type": "array",
+            "items":{
+                "type": "object",
+                "additionalProperties": True
+            },
+        },
+        "time": {"type": "number"},
         "sent_from": {"type": "integer"}
     }
 }

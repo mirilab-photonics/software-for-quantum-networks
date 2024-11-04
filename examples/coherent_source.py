@@ -41,9 +41,6 @@ def param_query(msg):
 
 @qsi.on_message("param_set")
 def param_set(msg):
-    """
-    Single photon source doesn't require any parameters
-    """
     global ALPHA
     params = msg["params"]
     if "alpha" in params:

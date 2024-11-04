@@ -59,13 +59,16 @@ class ModuleReference:
             states.append(State.from_message(s))
         return states
         
-    def channel_query(self, state: "State", port_assign):
+    def channel_query(self, state: "State", port_assign, time=0, signals=[]):
         """
         Queries the module for the Kraus channel
         """
         message = state.to_message(port_assign)
         message["msg_type"]="channel_query"
+        message["signals"]=signals
+        message["time"]=time
         response = self.coordinator.send_and_return_response(self.port, message)
+        print(response)
         if "kraus_operators" in response:
             operators = [json_to_numpy(x) for x in response["kraus_operators"]]
         return response, operators
