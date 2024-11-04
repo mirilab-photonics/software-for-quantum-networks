@@ -91,7 +91,7 @@ if __name__ == "__main__":
         except Exception as e:
             return {
                 "msg_type": "channel_query_response",
-                "message": f"Hello Signal parameters could not be read, {e}"
+                "message": f"Signal parameters could not be read, {e}"
                 }
         """
         Here the user should construct the Kraus operators
