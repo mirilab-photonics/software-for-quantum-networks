@@ -19,6 +19,7 @@ class StateProp:
     uuid: Optional[str] = field(default=None)
     wavelength: Optional[float] =field(default=None) # Wavelength in nanometers
     polarization: Optional[Literal["R", "L", "H", "V"]] = field(default=None)
+    bandwidth: Optional[float] = field(default=None)
 
     def __post_init__(self):
         if self.uuid is None:
@@ -29,6 +30,9 @@ class StateProp:
             self.wavelength = float(self.wavelength)
             if self.polarization is None:
                 raise ValueError("Polarization needs to be set for light type")
+            if self.bandwidth is None:
+                raise ValueError("Bandwidth needs to be set for light type")
+            self.bandwidth = float(self.bandwidth)
         if self.truncation is None:
             raise ValueError("Truncation needs to be set for all state types")
         self.truncation = int(self.truncation)
