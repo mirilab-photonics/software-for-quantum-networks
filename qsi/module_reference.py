@@ -1,5 +1,6 @@
 import subprocess
 import threading
+import sys 
 
 from qsi.helpers import numpy_to_json, json_to_numpy
 from qsi.state import State, StateProp
@@ -13,7 +14,7 @@ class ModuleReference:
         self.states = []
         self.params = []
         if runtime == "python":
-            command = ["python", module, str(port), str(coordinator_port)]
+            command = [sys.executable, module, str(port), str(coordinator_port)]
         self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         self.events = {
             "params_known": threading.Event()
