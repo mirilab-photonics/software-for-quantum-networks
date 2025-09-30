@@ -1,3 +1,7 @@
+This repository is a fork of qsi: https://github.com/tqsd/special_issue_quantum
+
+For the paper "Photonic Unitary Circuits for Quantum Information Processing" part of the Special Issue on Quantum.
+
 # QSI
 
 This repository includes basic codebase for quantum device simulation. The premise of this simulator is that all simulatable devices implement their actions on a particular quantum state in the **quantum channel formalism**, more specifically using Kraus representation. A module represents actions of one device. Since module can be implemented in any language, there needs to be some protocol for communication between the **coordinator** and the modules. This repository implements the protocol for easy integration in Python. Messages are clearly defined, so implementation in other languages should also be relatively easy.
@@ -8,7 +12,7 @@ This repository includes basic codebase for quantum device simulation. The premi
 We recommend using the repository in a python virtual environment. After the environment has been configured and activated, the **QSI** repository can be installed by:
 
 ```
-pip install git+https://github.com/tqsd/special_issue_quantum.git@master
+pip install git+https://github.com/mirilab-photonics/software-for-quantum-networks.git@master
 ```
 
 ## Usage
