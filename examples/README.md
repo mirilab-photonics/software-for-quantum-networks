@@ -9,3 +9,5 @@ This directory contains examples demonstrating both the implementation of indivi
 - **[single_photon_source.py](./single_photon_source.py)**: Generates a single photon state from an initial vacuum state.
 - **[color_center.py](./color_center.py)**: Rudimentary example on the implementation of the color center. It does not work in that it doesn't correctly simulate nv centers, but it does provide the necesarry toolset to implement a correct simulation. Example of usage is included in the [example_4.ipynb](./example_4.ipynb).
 These modules are utilized in various example files to illustrate their functionality and application in different scenarios.
+- **[jx_coupler.py](./jx_coupler.py)**: Models the photon probability distribution at the output of the Jx coupler.
+- **[multi_photon_source.py](./multi_photon_source.py)**: Produces a multi-photon state in a mode.

@@ -2,6 +2,17 @@ This repository is a fork of qsi: https://github.com/tqsd/special_issue_quantum
 
 For the paper "Photonic Unitary Circuits for Quantum Information Processing" part of the Special Issue on Quantum.
 
+Adds unitary device examples in [examples/example_5.ipynb](examples/example_5.ipynb):
+
+1. Two-Port Coupler Coherent States
+2. Three-Port Coupler with Two Coherent States and One Vaccum State
+3. Three-Port Jx Coupler with Three Input Photons
+
+Adds modules in [examples](examples):
+
+1. [examples/jx_coupler.py](examples/jx_coupler.py): Models the photon probability distribution at the output of the Jx coupler.
+2. [examples/multi_photon_source.py](examples/multi_photon_source.py): Produces a multi-photon state in a mode.
+
 # QSI
 
 This repository includes basic codebase for quantum device simulation. The premise of this simulator is that all simulatable devices implement their actions on a particular quantum state in the **quantum channel formalism**, more specifically using Kraus representation. A module represents actions of one device. Since module can be implemented in any language, there needs to be some protocol for communication between the **coordinator** and the modules. This repository implements the protocol for easy integration in Python. Messages are clearly defined, so implementation in other languages should also be relatively easy.
