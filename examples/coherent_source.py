@@ -35,7 +35,9 @@ def param_query(msg):
     return {
         "msg_type": "param_query_response",
         "params" : {
-            "alpha": "complex"
+            "alpha": "complex",
+            "wavelength": "number",
+            "bandwidth": "number",
         }
     }
 
@@ -82,7 +84,7 @@ def channel_query(msg):
         destroy[n-1,n] = np.sqrt(n)
 
     kraus_operators = [la.expm(
-        ALPHA * create - destroy * ALPHA
+        ALPHA * create - np.conjugate(ALPHA) * destroy
     )]
 
     kraus_operators.append(
